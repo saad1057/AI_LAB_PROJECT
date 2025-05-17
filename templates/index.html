@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rock Paper Scissors Classifier</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon" href="/static/favicon.webp">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <nav style="margin-bottom: 2rem;">
+            <a href="/" style="margin-right: 1.5rem; font-weight: bold;">Home</a>
+            <a href="/howtoplay" style="margin-right: 1.5rem;">How to Play</a>
+            <a href="/about">About</a>
+        </nav>
+        <h1 class="text-4xl font-bold text-center text-gray-800 mb-4">Rock Paper Scissors Classifier</h1>
+        <p class="text-center text-gray-600 mb-8">Show your hand gesture in the camera frame</p>
+        
+        <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6">
+            <div class="mode-switch mb-4">
+                <button id="practiceMode" class="bg-blue-500 text-white font-bold py-2 px-4 rounded-l focus:outline-none focus:shadow-outline active">
+                    Practice Mode
+                </button>
+                <button id="gameMode" class="bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-r focus:outline-none focus:shadow-outline">
+                    Game Mode
+                </button>
+            </div>
+            
+            <div class="camera-container mb-6" style="position: relative;">
+                <video id="video" autoplay playsinline style="z-index: 1;"></video>
+                <div class="frame-guide" style="
+                    position: absolute;
+                    top: 50%; left: 50%;
+                    width: 200px; height: 200px;
+                    transform: translate(-50%, -50%);
+                    border: 3px dashed #2d5be3;
+                    border-radius: 12px;
+                    opacity: 0.7;
+                    z-index: 2;
+                    pointer-events: none;
+                "></div>
+                <div class="prediction-box">
+                    <span id="predictionText">Waiting...</span>
+                </div>
+                <canvas id="canvas" style="display: none;"></canvas>
+            </div>
+            
+            <div class="flex justify-center space-x-4 mb-6">
+                <button id="startButton" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg shadow-md">
+                    Start Camera
+                </button>
+                <button id="captureButton" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg shadow-md" disabled>
+                    Capture
+                </button>
+            </div>
+
+            <!-- Game Mode UI (Hidden by default) -->
+            <div id="gameUI" class="hidden">
+                <div class="score-board mb-4">
+                    <div class="score-player">You: <span id="playerScore">0</span></div>
+                    <div class="score-computer">Computer: <span id="computerScore">0</span></div>
+                </div>
+                
+                <div id="gameStatus" class="text-center text-xl font-semibold mb-4">
+                    Press Play to start a round
+                </div>
+                
+                <div class="game-controls">
+                    <button id="playButton" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg shadow-md mr-4">
+                        Play Round
+                    </button>
+                    <button id="resetButton" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg shadow-md">
+                        Reset Score
+                    </button>
+                </div>
+                
+                <div id="roundResult" class="hidden mt-6 p-4 bg-gray-100 rounded-lg text-center text-xl font-bold">
+                    <!-- Result will be inserted here -->
+                </div>
+            </div>
+
+            <!-- Practice Mode UI -->
+            <div id="practiceUI">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                    <div class="gesture-card bg-red-50">
+                        <div style="font-size: 60px;">✊</div>
+                        <h3 class="text-lg font-semibold">Rock</h3>
+                        <p class="text-gray-600">Make a fist with your hand</p>
+                    </div>
+                    <div class="gesture-card bg-blue-50">
+                        <div style="font-size: 60px;">🖐️</div>
+                        <h3 class="text-lg font-semibold">Paper</h3>
+                        <p class="text-gray-600">Show open palm with fingers together</p>
+                    </div>
+                    <div class="gesture-card bg-green-50">
+                        <div style="font-size: 60px;">✌️</div>
+                        <h3 class="text-lg font-semibold">Scissors</h3>
+                        <p class="text-gray-600">Make a V shape with index and middle finger</p>
+                    </div>
+                </div>
+                
+                <div id="result" class="hidden mt-6">
+                    <div class="result-card bg-white rounded-lg shadow-md p-6 mb-4">
+                        <h2 class="text-2xl font-semibold text-gray-800 mb-2">Prediction</h2>
+                        <p class="text-xl text-gray-600" id="capturedPrediction"></p>
+                        <div class="mt-4">
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div id="confidenceBar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                            </div>
+                            <p class="text-sm text-gray-500 mt-2" id="confidenceText"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const startButton = document.getElementById('startButton');
+        const captureButton = document.getElementById('captureButton');
+        const result = document.getElementById('result');
+        const predictionText = document.getElementById('predictionText');
+        const capturedPrediction = document.getElementById('capturedPrediction');
+        const confidenceBar = document.getElementById('confidenceBar');
+        const confidenceText = document.getElementById('confidenceText');
+        
+        // Game Mode Elements
+        const practiceMode = document.getElementById('practiceMode');
+        const gameMode = document.getElementById('gameMode');
+        const practiceUI = document.getElementById('practiceUI');
+        const gameUI = document.getElementById('gameUI');
+        const playButton = document.getElementById('playButton');
+        const resetButton = document.getElementById('resetButton');
+        const gameStatus = document.getElementById('gameStatus');
+        const roundResult = document.getElementById('roundResult');
+        const playerScore = document.getElementById('playerScore');
+        const computerScore = document.getElementById('computerScore');
+
+        // Variables
+        let stream = null;
+        let isModelReady = false;
+        let isPredicting = false;
+        let predictionInterval = null;
+        let currentMode = 'practice';
+        let gameState = {
+            playerScore: 0,
+            computerScore: 0,
+            countdown: 0,
+            isPlaying: false
+        };
+
+        const gestureDescriptions = {
+            'rock': 'Rock: A closed fist. Typically beats scissors but loses to paper.',
+            'paper': 'Paper: An open palm. Covers rock but loses to scissors.',
+            'scissors': 'Scissors: A V shape with index and middle finger. Cuts paper but loses to rock.'
+        };
+
+        // Mode switching
+        practiceMode.addEventListener('click', () => {
+            currentMode = 'practice';
+            practiceMode.classList.remove('bg-gray-300', 'text-gray-700');
+            practiceMode.classList.add('bg-blue-500', 'text-white');
+            gameMode.classList.remove('bg-blue-500', 'text-white');
+            gameMode.classList.add('bg-gray-300', 'text-gray-700');
+            practiceUI.classList.remove('hidden');
+            gameUI.classList.add('hidden');
+        });
+
+        gameMode.addEventListener('click', () => {
+            currentMode = 'game';
+            gameMode.classList.remove('bg-gray-300', 'text-gray-700');
+            gameMode.classList.add('bg-blue-500', 'text-white');
+            practiceMode.classList.remove('bg-blue-500', 'text-white');
+            practiceMode.classList.add('bg-gray-300', 'text-gray-700');
+            gameUI.classList.remove('hidden');
+            practiceUI.classList.add('hidden');
+        });
+
+        // Start camera
+        startButton.addEventListener('click', async () => {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    } 
+                });
+                video.srcObject = stream;
+                startButton.disabled = true;
+                captureButton.disabled = false;
+                
+                // Start continuous prediction
+                startContinuousPrediction();
+                
+            } catch (err) {
+                console.error('Error accessing camera:', err);
+                alert('Error accessing camera. Please make sure you have granted camera permissions.');
+            }
+        });
+
+        // Capture button for practice mode
+        captureButton.addEventListener('click', async () => {
+            // Set canvas dimensions to match video
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            // Draw current video frame to canvas
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Get image data as base64
+            const imageData = canvas.toDataURL('image/jpeg');
+            
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ image: imageData })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                // Update UI with prediction
+                result.classList.remove('hidden');
+                capturedPrediction.textContent = `This is ${data.prediction}!`;
+                const confidence = (data.confidence * 100).toFixed(1);
+                confidenceBar.style.width = `${confidence}%`;
+                confidenceText.textContent = `Confidence: ${confidence}%`;
+                
+            } catch (err) {
+                console.error('Error making prediction:', err);
+                alert('Error making prediction. Please try again.');
+            }
+        });
+
+        // Game mode controls
+        playButton.addEventListener('click', () => {
+            if (!gameState.isPlaying) {
+                startGameRound();
+            }
+        });
+
+        resetButton.addEventListener('click', () => {
+            gameState.playerScore = 0;
+            gameState.computerScore = 0;
+            playerScore.textContent = '0';
+            computerScore.textContent = '0';
+            gameStatus.textContent = 'Score reset. Press Play to start a new round.';
+            roundResult.classList.add('hidden');
+        });
+
+        // Start continuous prediction
+        function startContinuousPrediction() {
+            if (isPredicting) return;
+            
+            isPredicting = true;
+            predictionInterval = setInterval(async () => {
+                if (!video.paused && !video.ended) {
+                    // Set canvas dimensions to match video
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    
+                    // Draw current video frame to canvas
+                    const context = canvas.getContext('2d');
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    // Get image data as base64
+                    const imageData = canvas.toDataURL('image/jpeg');
+                    
+                    try {
+                        const response = await fetch('/predict', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ image: imageData })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.error) {
+                            throw new Error(data.error);
+                        }
+                        
+                        // Update the prediction text
+                        const confidence = (data.confidence * 100).toFixed(1);
+                        predictionText.textContent = `${data.prediction.toUpperCase()}: ${confidence}%`;
+                        
+                        // Handle game mode countdown
+                        if (currentMode === 'game' && gameState.isPlaying) {
+                            handleGameCountdown(data.prediction);
+                        }
+                        
+                    } catch (err) {
+                        console.error('Error making prediction:', err);
+                        predictionText.textContent = 'Error making prediction';
+                    }
+                }
+            }, 200); // Update every 200ms
+        }
+
+        function startGameRound() {
+            gameState.isPlaying = true;
+            gameState.countdown = 3;
+            roundResult.classList.add('hidden');
+            
+            const countdownInterval = setInterval(() => {
+                if (gameState.countdown > 0) {
+                    gameStatus.textContent = `Get ready! ${gameState.countdown}...`;
+                    gameState.countdown--;
+                } else {
+                    clearInterval(countdownInterval);
+                    gameStatus.textContent = 'Show your hand now!';
+                    
+                    // Capture the gesture after a short delay
+                    setTimeout(() => {
+                        captureGameGesture();
+                    }, 1000);
+                }
+            }, 1000);
+        }
+
+        function captureGameGesture() {
+            // Set canvas dimensions to match video
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            // Draw current video frame to canvas
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Get image data as base64
+            const imageData = canvas.toDataURL('image/jpeg');
+            
+            fetch('/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ image: imageData })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                const playerChoice = data.prediction;
+                const choices = ['rock', 'paper', 'scissors'];
+                const computerChoice = choices[Math.floor(Math.random() * choices.length)];
+                
+                // Determine winner
+                let result = '';
+                if (playerChoice === computerChoice) {
+                    result = "It's a tie!";
+                } else if (
+                    (playerChoice === 'rock' && computerChoice === 'scissors') ||
+                    (playerChoice === 'paper' && computerChoice === 'rock') ||
+                    (playerChoice === 'scissors' && computerChoice === 'paper')
+                ) {
+                    result = "You win!";
+                    gameState.playerScore++;
+                    playerScore.textContent = gameState.playerScore;
+                } else {
+                    result = "Computer wins!";
+                    gameState.computerScore++;
+                    computerScore.textContent = gameState.computerScore;
+                }
+                
+                // Update UI
+                roundResult.innerHTML = `
+                    <div class="mb-2">You chose <span class="font-bold text-blue-600">${playerChoice.toUpperCase()}</span></div>
+                    <div class="mb-2">Computer chose <span class="font-bold text-red-600">${computerChoice.toUpperCase()}</span></div>
+                    <div class="text-2xl mt-2">${result}</div>
+                `;
+                roundResult.classList.remove('hidden');
+                gameStatus.textContent = 'Press Play to start another round';
+                gameState.isPlaying = false;
+                
+            })
+            .catch(err => {
+                console.error('Error in game capture:', err);
+                gameStatus.textContent = 'Error making prediction. Try again.';
+                gameState.isPlaying = false;
+            });
+        }
+
+        function handleGameCountdown(prediction) {
+            // This function can be expanded if you want to do anything specific 
+            // with predictions during the countdown
+        }
+    </script>
+</body>
+</html>
