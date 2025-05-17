@@ -1,0 +1,11 @@
+*.h5
+*.pt
+*.pkl
+*.zip
+*.tar
+*.mp4
+*.csv
+*.json
+*.ipynb
+Capture.PNG
+DataSet_Link.txt 
