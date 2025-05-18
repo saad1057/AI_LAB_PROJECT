@@ -155,14 +155,6 @@ def generate_frames():
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
-@app.route('/about')
-def about():
-    return render_template('about.html')
-
-@app.route('/howtoplay')
-def howtoplay():
-    return render_template('howtoplay.html')
-
 if __name__ == '__main__':
     # Load model before starting the server
     if load_model_safely():

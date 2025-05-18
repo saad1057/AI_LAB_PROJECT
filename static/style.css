@@ -23,24 +23,18 @@ h1 {
 }
 
 .camera-container {
-    border: 2px solid #2d5be3;
-    box-shadow: 0 2px 12px rgba(44, 62, 80, 0.10);
-    border-radius: 14px;
-    overflow: hidden;
-    margin-bottom: 1.5rem;
     position: relative;
-    background: #e9eefb;
-    width: 640px;
-    height: 480px;
-    max-width: 100%;
-    margin-left: auto;
-    margin-right: auto;
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.camera-container video {
+#video {
     width: 100%;
-    height: 100%;
-    object-fit: cover;
+    height: auto;
     display: block;
     border-radius: 12px;
 }
@@ -60,20 +54,15 @@ h1 {
 }
 
 .prediction-box {
-    background: #2d5be3;
-    color: #fff;
-    font-size: 1.3rem;
-    font-weight: 600;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(44, 62, 80, 0.10);
-    padding: 0.5rem 1.5rem;
     position: absolute;
-    bottom: 18px;
+    top: 20px;
     left: 50%;
     transform: translateX(-50%);
-    min-width: 220px;
-    text-align: center;
-    opacity: 0.95;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: bold;
     z-index: 3;
 }
 
@@ -124,59 +113,63 @@ button:active {
     transform: scale(0.98);
 }
 
-.mode-switch button {
-    background: #e9eefb;
-    color: #2d5be3;
-    border: 2px solid #2d5be3;
-    margin: 0;
-    border-radius: 10px 10px 0 0;
+.mode-switch {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.5rem;
 }
-.mode-switch button.active, .mode-switch button:focus {
-    background: #2d5be3;
-    color: #fff;
+
+.mode-switch button {
+    transition: all 0.2s ease-in-out;
+}
+
+.mode-switch button:hover {
+    transform: translateY(-2px);
 }
 
 .gesture-card {
-    background: #f7f9fd;
-    color: #2d5be3;
-    border: 1.5px solid #e9eefb;
-    box-shadow: 0 2px 8px rgba(44, 62, 80, 0.07);
+    padding: 1.5rem;
     border-radius: 12px;
-    padding: 1.2rem 0.5rem 1.2rem 0.5rem;
-    margin: 0.5rem 0;
     text-align: center;
-    transition: box-shadow 0.2s, transform 0.2s;
+    transition: transform 0.2s ease-in-out;
 }
-.gesture-card img {
-    max-width: 80px;
-    margin-bottom: 0.5rem;
-}
+
 .gesture-card:hover {
-    box-shadow: 0 8px 24px rgba(44, 62, 80, 0.13);
-    transform: translateY(-4px) scale(1.04);
+    transform: translateY(-5px);
 }
 
 .score-board {
-    background: #2d5be3;
-    color: #fff;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(44, 62, 80, 0.10);
-    padding: 0.5rem 1.5rem;
-    font-size: 1.2rem;
-    font-weight: 700;
+    display: flex;
+    justify-content: space-around;
+    font-size: 1.25rem;
+    font-weight: bold;
     margin-bottom: 1rem;
 }
 
+.score-player {
+    color: #2563eb;
+}
+
+.score-computer {
+    color: #dc2626;
+}
+
 .result-card {
-    background: #fff;
-    color: #2d5be3;
-    border-radius: 14px;
-    box-shadow: 0 2px 8px rgba(44, 62, 80, 0.10);
-    border: 1.5px solid #e9eefb;
+    transition: all 0.3s ease-in-out;
+}
+
+.result-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes fillBar {
+    from { width: 0; }
+    to { width: var(--confidence); }
 }
 
 #confidenceBar {
-    background: #2d5be3;
+    transition: width 0.5s ease-in-out;
 }
 
 ::-webkit-scrollbar {
@@ -200,5 +193,19 @@ button:active {
     .frame-guide {
         width: 120px;
         height: 120px;
+    }
+}
+
+@media (max-width: 640px) {
+    .camera-container {
+        max-width: 100%;
+    }
+    
+    .gesture-card {
+        padding: 1rem;
+    }
+    
+    .score-board {
+        font-size: 1rem;
     }
 } 
